@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import { chatSchema } from "../Model/chatModel.mjs"
 import { messageSchema } from "../Model/msgModel.mjs"
+import { userSchema } from "../Model/userModel.mjs"
 
 const chat = async (req, res, next) => {
     try{
@@ -12,7 +13,7 @@ const chat = async (req, res, next) => {
        }else{
             const isChat = await chatSchema.findOne({
                 $and:[{users:{$elemMatch:{$eq:user}}},{users:{$elemMatch:{$eq:opponent}}}]
-            }).populate("users","-profile.password")
+            }).populate("users")
             
             if(isChat){
                obj.status = true
@@ -23,7 +24,7 @@ const chat = async (req, res, next) => {
                     displayName:"sender"
                 }
                 const createdChat = await chatSchema.create(chatObj)
-                const fullChat = await chatSchema.findOne({_id:createdChat._id}).populate("users","-profile.password")
+                const fullChat = await chatSchema.findOne({_id:createdChat._id}).populate("users")
                 obj.status = false
                 obj.chat = fullChat
             }
@@ -36,10 +37,29 @@ const chat = async (req, res, next) => {
 
 const getChatList = async (req, res, next) => {
     try{
-        const user_id = req.params.user_id    
-        const fullChat = await chatSchema.find({users:{$in:[user_id]}}).populate("users","-profile.password").populate("lastMessage").sort({updatedAt:-1})
-        res.json({status:true,list:fullChat})
+        const chat_id = req.params.chat_id   
+        const fullChat = await chatSchema.find({users:{$in:[chat_id]}}).populate("users").populate("lastMessage").sort({updatedAt:-1})
+        console.log(fullChat);
+        res.json({status:true,list:fullChat || []})
     }catch(err){
+        console.log(err);
+        res.json({error:err.message})
+    }
+}
+
+const getUserExist = async (req, res, next) => {
+    try{
+        const number = parseInt(req.params.number)  
+        console.log(number);
+        const fullChat = await userSchema.findOne({number:number})
+        console.log(fullChat);
+        if(fullChat){
+            res.json({status:true, info: fullChat})
+        }else{
+            res.json({status:false})
+        }
+    }catch(err){
+        console.log(err);
         res.json({error:err.message})
     }
 }
@@ -53,7 +73,7 @@ const sendMessage = async (req, res, next) => {
             chat_id:new mongoose.Types.ObjectId(chat_id)
         }
         let message = await messageSchema.create(obj)
-        message = await message.populate("sender","profile.full_name profile.image")
+        message = await message.populate("sender")
         message = await message.populate("chat_id")
         message = await message.populate("chat_id.users")
         await chatSchema.updateOne({_id:new mongoose.Types.ObjectId(chat_id)},{$set:{lastMessage:content}})
@@ -66,7 +86,7 @@ const sendMessage = async (req, res, next) => {
 const getAllMessages = async (req, res, next) => {
     try{
         let messages = await messageSchema.find({chat_id:new mongoose.Types.ObjectId(req.params.chat_id)})
-        .populate("sender","profile.full_name profile.username profile.image")
+        .populate("sender")
         .populate("chat_id")
         res.json({messages})
     }catch(err){
@@ -87,4 +107,4 @@ const unreadMessage = async (req, res, next) => {
     }
 }
 
-export default { chat, getChatList, sendMessage, getAllMessages, unreadMessage }
+export default { chat, getChatList, sendMessage, getAllMessages, getUserExist, unreadMessage }
