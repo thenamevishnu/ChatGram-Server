@@ -39,7 +39,6 @@ const getChatList = async (req, res, next) => {
     try{
         const chat_id = req.params.chat_id   
         const fullChat = await chatSchema.find({users:{$in:[chat_id]}}).populate("users").populate("lastMessage").sort({updatedAt:-1})
-        console.log(fullChat);
         res.json({status:true,list:fullChat || []})
     }catch(err){
         console.log(err);
@@ -50,9 +49,7 @@ const getChatList = async (req, res, next) => {
 const getUserExist = async (req, res, next) => {
     try{
         const number = parseInt(req.params.number)  
-        console.log(number);
         const fullChat = await userSchema.findOne({number:number})
-        console.log(fullChat);
         if(fullChat){
             res.json({status:true, info: fullChat})
         }else{

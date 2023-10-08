@@ -3,6 +3,7 @@ const chache = new NodeCache()
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
 import { userSchema } from "../Model/userModel.mjs"
+import mongoose from "mongoose"
 
 dotenv.config()
 
@@ -61,6 +62,8 @@ const verifyOtp = async (req, res) => {
                 if(!findUser){
                     const response = await userSchema.create(user)
                     obj.user.user.id = response._id
+                }else{
+                    obj.user.user.id = findUser._id
                 }
             }else{
                 obj.status = false
@@ -74,4 +77,26 @@ const verifyOtp = async (req, res) => {
     }
 }
 
-export default {sendOtp, verifyOtp}
+const usernameCheck = async (req, res) => {
+    try{
+        const findUserName = await userSchema.findOne({user: req.params.username})
+        if(findUserName)
+            res.json({status: true})
+        else
+            res.json({status: false})
+    }catch(err){
+        res.json({error:err.message})
+    }
+}
+
+const profileUpdate = async (req, res) => {
+    try{
+        const {profile, user} = req.body
+        await userSchema.updateOne({_id: new mongoose.Types.ObjectId(user)},{$set:{user: profile.username, pic: profile.pic}})
+        res.json({status: true})
+    }catch(err){
+        res.json({error:err.message})
+    }
+}
+
+export default {sendOtp, verifyOtp, usernameCheck, profileUpdate}

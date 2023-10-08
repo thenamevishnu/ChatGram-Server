@@ -25,11 +25,8 @@ const io = new Server(server,{
 io.on("connection",(socket)=>{
 
     socket.on("setup",(user_id)=>{
-        console.log(user_id);
         socket.join(user_id)
     })
-
-    socket.on("close", () => socket.disconnect())
 
     socket.on("join_chat",(room)=>{
         socket.join(room)
